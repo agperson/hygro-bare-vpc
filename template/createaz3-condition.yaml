@@ -1,0 +1,14 @@
+---
+# This condition is checked before attempting to setup a third AZ in a
+# given region. The following regions have only 2 availability zones.
+# In the case of us-west-1, older accounts may have access to all three
+# AZs, but we have no way of checking that.
+Conditions:
+  CreateAZ3: !Not [
+    !Or [
+      !Equals [ "$(AWS::Region)", "ap-southeast-1" ],
+      !Equals [ "$(AWS::Region)", "ap-southeast-2" ],
+      !Equals [ "$(AWS::Region)", "us-west-1" ],
+      !Equals [ "$(AWS::Region)", "sa-east-1" ]
+    ]
+  ]

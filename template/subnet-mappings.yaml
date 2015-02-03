@@ -1,0 +1,35 @@
+---
+Mappings:
+  # Determine subnet mappings by converting the user-provided starting third
+  # octet into an array position for use by Fn::Select calls.
+  Octet3:
+    Pos:
+      0:   0
+      16:  1
+      32:  2
+      48:  3
+      64:  4
+      80:  5
+      96:  6
+      112: 7
+      128: 8
+      144: 9
+      160: 10
+      176: 11
+      192: 12
+      208: 13
+      224: 14
+      240: 125
+
+  # Because we are using a /20, subnet octets change based on the starting
+  # position of the VPC range. If only CloudFormation supported addition!
+  AZSubnets:
+    AZ1:
+      Public1:     [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240]
+      Private1:    [4, 20, 36, 52, 68, 84, 100, 116, 132, 148, 164, 180, 196, 212, 228, 244]
+    AZ2:
+      Public1:     [5, 21, 37, 53, 69, 85, 101, 117, 133, 149, 165, 181, 197, 213, 229, 245]
+      Private1:    [9, 25, 41, 57, 73, 89, 105, 121, 137, 153, 169, 185, 201, 217, 233, 249]
+    AZ3:
+      Public1:     [10, 26, 42, 58, 74, 90, 106, 122, 138, 154, 170, 186, 202, 218, 234, 250]
+      Private1:    [14, 30, 46, 62, 78, 94, 110, 126, 142, 158, 174, 190, 206, 222, 238, 254]

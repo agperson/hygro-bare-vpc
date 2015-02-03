@@ -1,0 +1,235 @@
+---
+Description: Standard VPC layout utilizing a /20 CIDR allocation with public and private subnets in each availability zone
+Parameters:
+  VpcCidrOctet1:
+    Description: First octet of the VPC's full CIDR block (i.e. [10].254.0.0/20)
+    Default: 10
+    Type: Number
+  VpcCidrOctet2:
+    Description: Second octet of the VPC's full CIDR block (i.e. 10.[254].0.0/20)
+    Default: 254
+    Type: Number
+  VpcCidrOctet3:
+    Description: Third octet of the VPC's full CIDR block (i.e. 10.254.[0].0/20)
+    Default: 0
+    Type: Number
+
+  # Using Fn::GetAZs returns all AZs regardless of whether they are actually
+  # available for our use, so the user must input a list of 2-3 valid AZs.
+  AZList:
+    Description: Three valid availability zones for this account in this region (or 2 in regions that do not support 3 AZs)
+    Type: CommaDelimitedList
+    Default: "us-east-1a,us-east-1b,us-east-1c"
+
+Resources:
+  # Setup a VPC with a /20 using the given CIDR prefix
+  VPC:
+    Properties:
+      CidrBlock: "$(VpcCidrOctet1).$(VpcCidrOctet2).$(VpcCidrOctet3).0/20"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-vpc"
+    Type: AWS::EC2::VPC
+
+  # Create an internet gateway and attach it to the VPC
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-igw"
+  VPCIGWAttachment:
+    DependsOn: IGW
+    Properties:
+      InternetGatewayId: "$(IGW)"
+      VpcId: "$(VPC)"
+    Type: AWS::EC2::VPCGatewayAttachment
+
+  # Create initial public and private subnets in each AZ
+  AZ1PublicSubnet1:
+    Properties:
+      AvailabilityZone: !Select [0, $(AZList)]
+      CidrBlock: !Join ["", [
+        "$(VpcCidrOctet1).$(VpcCidrOctet2).",
+        !Select [
+          !FindInMap ["Octet3", "Pos", "$(VpcCidrOctet3)"],
+          !FindInMap ["AZSubnets", "AZ1", "Public1"]
+        ],
+        ".0/24"
+      ]]
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az1-public-1"
+    Type: AWS::EC2::Subnet
+  AZ1PrivateSubnet1:
+    Properties:
+      AvailabilityZone: !Select [0, $(AZList)]
+      CidrBlock: !Join ["", [
+        "$(VpcCidrOctet1).$(VpcCidrOctet2).",
+        !Select [
+          !FindInMap ["Octet3", "Pos", "$(VpcCidrOctet3)"],
+          !FindInMap ["AZSubnets", "AZ1", "Private1"]
+        ],
+        ".0/24"
+      ]]
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az1-private-1"
+    Type: AWS::EC2::Subnet
+
+  AZ2PublicSubnet1:
+    Properties:
+      AvailabilityZone: !Select [1, $(AZList)]
+      CidrBlock: !Join ["", [
+        "$(VpcCidrOctet1).$(VpcCidrOctet2).",
+        !Select [
+          !FindInMap ["Octet3", "Pos", "$(VpcCidrOctet3)"],
+          !FindInMap ["AZSubnets", "AZ2", "Public1"]
+        ],
+        ".0/24"
+      ]]
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az2-public-1"
+    Type: AWS::EC2::Subnet
+  AZ2PrivateSubnet1:
+    Properties:
+      AvailabilityZone: !Select [1, $(AZList)]
+      CidrBlock: !Join ["", [
+        "$(VpcCidrOctet1).$(VpcCidrOctet2).",
+        !Select [
+          !FindInMap ["Octet3", "Pos", "$(VpcCidrOctet3)"],
+          !FindInMap ["AZSubnets", "AZ2", "Private1"]
+        ],
+        ".0/24"
+      ]]
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az2-private-1"
+    Type: AWS::EC2::Subnet
+
+  AZ3PublicSubnet1:
+    Condition: CreateAZ3
+    Properties:
+      AvailabilityZone: !Select [2, $(AZList)]
+      CidrBlock: !Join ["", [
+        "$(VpcCidrOctet1).$(VpcCidrOctet2).",
+        !Select [
+          !FindInMap ["Octet3", "Pos", "$(VpcCidrOctet3)"],
+          !FindInMap ["AZSubnets", "AZ3", "Public1"]
+        ],
+        ".0/24"
+      ]]
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az3-public-1"
+    Type: AWS::EC2::Subnet
+  AZ3PrivateSubnet1:
+    Condition: CreateAZ3
+    Properties:
+      AvailabilityZone: !Select [2, $(AZList)]
+      CidrBlock: !Join ["", [
+        "$(VpcCidrOctet1).$(VpcCidrOctet2).",
+        !Select [
+          !FindInMap ["Octet3", "Pos", "$(VpcCidrOctet3)"],
+          !FindInMap ["AZSubnets", "AZ3", "Private1"]
+        ],
+        ".0/24"
+      ]]
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az3-private-1"
+    Type: AWS::EC2::Subnet
+
+  # Create one public route table attached to the internet gateway
+  PublicRouteTable:
+    Properties:
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-public"
+    Type: AWS::EC2::RouteTable
+  PublicRouteTableIGWRoute:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: "$(IGW)"
+      RouteTableId: "$(PublicRouteTable)"
+    Type: AWS::EC2::Route
+
+  # Associate the public route table with all public subnets
+  AZ1PublicSubnet1Association:
+    Properties:
+      RouteTableId: "$(PublicRouteTable)"
+      SubnetId: "$(AZ1PublicSubnet1)"
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  AZ2PublicSubnet1Association:
+    Properties:
+      RouteTableId: "$(PublicRouteTable)"
+      SubnetId: "$(AZ2PublicSubnet1)"
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  AZ3PublicSubnet1Association:
+    Condition: CreateAZ3
+    Properties:
+      RouteTableId: "$(PublicRouteTable)"
+      SubnetId: "$(AZ3PublicSubnet1)"
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  # Create private route tables for each AZ
+  AZ1PrivateSubnet1RouteTable:
+    Properties:
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az1-private1"
+    Type: AWS::EC2::RouteTable
+  AZ2PrivateSubnet1RouteTable:
+    Properties:
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az2-private1"
+    Type: AWS::EC2::RouteTable
+  AZ3PrivateSubnet1RouteTable:
+    Condition: CreateAZ3
+    Properties:
+      VpcId: "$(VPC)"
+      Tags:
+      - Key: Name
+        Value: "$(AWS::StackName)-az3-private1"
+    Type: AWS::EC2::RouteTable
+
+  # Associate the private route tables with the private subnets
+  AZ1PrivateSubnet1Association:
+    Properties:
+      RouteTableId: "$(AZ1PrivateSubnet1RouteTable)"
+      SubnetId: "$(AZ1PrivateSubnet1)"
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  AZ2PrivateSubnet1Association:
+    Properties:
+      RouteTableId: "$(AZ2PrivateSubnet1RouteTable)"
+      SubnetId: "$(AZ2PrivateSubnet1)"
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  AZ3PrivateSubnet1Association:
+    Condition: CreateAZ3
+    Properties:
+      RouteTableId: "$(AZ3PrivateSubnet1RouteTable)"
+      SubnetId: "$(AZ3PrivateSubnet1)"
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+Outputs:
+  VpcId:
+    Value: "$(VPC)"
+  PublicSubnetIds:
+    Value: "$(AZ1PublicSubnet1),$(AZ2PublicSubnet1),$(AZ3PublicSubnet1)"
+  PublicSubnetRouteTableIds:
+    Value: "$(PublicRouteTable)"
+  PrivateSubnetIds:
+    Value: "$(AZ1PrivateSubnet1),$(AZ2PrivateSubnet1),$(AZ3PrivateSubnet1)"
+  PrivateSubnetRouteTableIds:
+    Value: "$(AZ1PrivateSubnet1RouteTable),$(AZ2PrivateSubnet1RouteTable),$(AZ3PrivateSubnet1RouteTable)"
