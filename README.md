@@ -1,4 +1,4 @@
-hygro-bare-vpc
+hygro-vpc-base
 ==============
 
 This [hygroscopic](https://github.com/agperson/hygroscope) CloudFormation template creates a standard VPC layout utilzing a /20 CIDR allocation (4096 available IP addresses).  It creates a single public and private subnet in each provided availability zone.  The public subnets are attached to an internet gateway and the private subnets are ready to be attached to NAT instances.
