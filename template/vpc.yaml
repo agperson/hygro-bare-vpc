@@ -225,6 +225,10 @@ Resources:
 Outputs:
   VpcId:
     Value: "$(VPC)"
+  VpcCidrBlock:
+    Value: "$(VpcCidrOctet1).$(VpcCidrOctet2).$(VpcCidrOctet3).0/20"
+  AZList:
+    Value: "$(AZList)"
   PublicSubnetIds:
     Value: "$(AZ1PublicSubnet1),$(AZ2PublicSubnet1),$(AZ3PublicSubnet1)"
   PublicSubnetRouteTableIds:
