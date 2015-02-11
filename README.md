@@ -9,33 +9,36 @@ A mapping file is used to determine subnet address ranges based on the assumptio
 - `10.254.32.0/20`
 - etc.
 
-One possible configuration is to assign a given region (such as us-east-1) a dedicated /16 block and then create up to 16 /20 VPCs within that region.
+One possible configuration is to allocate a given region (such as us-east-1) a dedicated /16 block and then create up to 16 /20 VPCs within that region.
 
 Because a few regions support only 2 availiability zones, and because CloudFormation logic is limited, a condition is used to determine whether or not to create subnets in a third availability zone.
 
 Network layout example
 ----------------------
 
-Here is a sample network layout for a VPC with a `10.254.0.0/20` allocation:
+The bare VPC is created with the following subnets pre-allocated, leaving ample space for additional subnets to be added within each AZ for different functions.  Such additional uses could include, for example, services that need an unroutable data tier that is more isolated than the "private" subnets, or a set of subnets that are routed back to a datacenter only.
 
-CIDR Range     | Allocation
--------------- | -------------
-10.254.0.0/24  | AZ1 - Public
-10.254.1.0/24  | AZ1 - Open
-10.254.2.0/24  | AZ1 - Open
-10.254.3.0/24  | AZ1 - Open
-10.254.4.0/24  | AZ1 - Private
-10.254.5.0/24  | AZ2 - Public
-10.254.6.0/24  | AZ2 - Open
-10.254.7.0/24  | AZ2 - Open
-10.254.8.0/24  | AZ2 - Open
-10.254.9.0/24  | AZ2 - Private
-10.254.10.0/24 | AZ3 - Public
-10.254.11.0/24 | AZ3 - Open
-10.254.12.0/24 | AZ3 - Open
-10.254.13.0/24 | AZ3 - Open
-10.254.14.0/24 | AZ3 - Private
-10.254.15.0/24 | Unallocated
-10.254.16.0/24 | Unallocated
+A standard of a /20 should provide sufficient space for these variations in most cases by granting an additional 3 /24 subnets (or more smaller subnets) within each of three availability zones.  One downside of this approach is an orphaned /24 block at the end with no clear functional use.
 
-The expectation is that the "default" layout will be expanded with additional subnets in each availability zone as needed, which is why only two are specifically allocated per AZ in the base configuration.
+<table>
+  <tr><th>AZ</th><th>Subnet</th><th>Purpose</th></tr>
+  <tr><td rowspan="5">1</td><td>0</td><td>Public</td></tr>
+  <tr><td>1</td><td></td></tr>
+  <tr><td>2</td><td></td></tr>
+  <tr><td>3</td><td></td></tr>
+  <tr><td>4</td><td>Private</td></tr>
+
+  <tr><td rowspan="5">2</td><td>5</td><td>Public</td></tr>
+  <tr><td>6</td><td></td></tr>
+  <tr><td>7</td><td></td></tr>
+  <tr><td>8</td><td></td></tr>
+  <tr><td>9</td><td>Private</td></tr>
+
+  <tr><td rowspan="5">3</td><td>10</td><td>Public</td></tr>
+  <tr><td>11</td><td></td></tr>
+  <tr><td>12</td><td></td></tr>
+  <tr><td>13</td><td></td></tr>
+  <tr><td>14</td><td>Private</td></tr>
+
+  <tr><td>None</td><td>15</td><td>Unallocated</td></tr>
+</table>
